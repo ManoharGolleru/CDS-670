@@ -15,12 +15,12 @@ All reports are public. Display names are unverified nicknames, not accounts or 
 
 ## Architecture
 
-- \`docs/\`: static HTML, CSS and browser JavaScript hosted by GitHub Pages. No build step, database or npm dependencies.
+- `docs/`: static HTML, CSS and browser JavaScript hosted by GitHub Pages. No build step, database or npm dependencies.
 - GitHub Issues in **this repo**: single source of truth for reports, comments and status labels. Students see GitHub data read-only through GitHub's public API.
-- \`worker/\`: a small Cloudflare Worker that validates anonymous submissions, verifies Cloudflare Turnstile, rate-limits by IP and creates GitHub Issues using a server-side token.
+- `worker/`: a small Cloudflare Worker that validates anonymous submissions, verifies Cloudflare Turnstile, rate-limits by IP and creates GitHub Issues using a server-side token.
 - Instructors respond and change status through GitHub's normal Issues interface. The website refreshes on demand.
 
-**Security:** Never put a GitHub token in \`docs/\`, \`config.js\`, commit history, or browser JavaScript. A static GitHub Pages site cannot anonymously create GitHub Issues safely without a server-side service.
+**Security:** Never put a GitHub token in `docs/`, `config.js`, commit history, or browser JavaScript. A static GitHub Pages site cannot anonymously create GitHub Issues safely without a server-side service.
 
 ## One-time setup for the instructor
 
@@ -32,37 +32,37 @@ If Pages is disabled at the account or repository level, an administrator must e
 
 ### 2. Make a GitHub access token for the Worker
 
-In GitHub, create a **fine-grained personal access token**, restricted to **only** \`ManoharGolleru/CDS-670\`, with **Issues: Read and write**. Use an expiration date and rotate when necessary. Store it only as the Worker secret \`GITHUB_TOKEN\`.
+In GitHub, create a **fine-grained personal access token**, restricted to **only** `ManoharGolleru/CDS-670`, with **Issues: Read and write**. Use an expiration date and rotate when necessary. Store it only as the Worker secret `GITHUB_TOKEN`.
 
 To use a GitHub App installation token instead, add token rotation/issuance in the Worker first. Do not store expiring access tokens in static site files.
 
 ### 3. Set up Cloudflare Turnstile
 
-Create a free Turnstile site widget in Cloudflare. Add \`manohargolleru.github.io\` to its allowed hostnames. Copy its **site key** and **secret key** separately. The site key is public. The secret key is a Worker secret. The action name used here is \`report-issue\`.
+Create a free Turnstile site widget in Cloudflare. Add `manohargolleru.github.io` to its allowed hostnames. Copy its **site key** and **secret key** separately. The site key is public. The secret key is a Worker secret. The action name used here is `report-issue`.
 
 ### 4. Publish the Worker
 
-From the \`worker/\` directory with Node.js installed:
+From the `worker/` directory with Node.js installed:
 
-\`\`\`sh
+```sh
 npx wrangler login
-npx wrangler secret put GITHUB_TOKEN
-npx wrangler secret put TURNSTILE_SECRET_KEY
-npx wrangler deploy
-\`\`\`
+npx wrangler deploy --secrets-file /absolute/path/outside-repo/worker-secrets.json
+```
 
-Wrangler creates a Worker URL similar to \`https://cds670-reports.YOUR-SUBDOMAIN.workers.dev\`. The issue submission endpoint is \`https://cds670-reports.YOUR-SUBDOMAIN.workers.dev/issues\`. Keep the token and Turnstile secret private. The Worker is locked to origin \`https://manohargolleru.github.io\`. It accepts requests only for the \`/issues\` route. The Cloudflare rate limit limits 10 submissions per minute per IP per Cloudflare location, not a guarantee against distributed spam.
+The owner-only JSON file must contain only `GITHUB_TOKEN` and `TURNSTILE_SECRET_KEY`. Keep it outside the checkout and delete this temporary deployment copy afterward. Uploading code and secrets together avoids a deployment missing its credentials. Keep the original credentials file private and outside the repository; do not upload the combined three-key file. Later secret changes can use `npx wrangler secret put KEY`.
+
+Wrangler creates a Worker URL similar to `https://cds670-reports.YOUR-SUBDOMAIN.workers.dev`. The issue submission endpoint is `https://cds670-reports.YOUR-SUBDOMAIN.workers.dev/issues`. Keep the token and Turnstile secret private. The Worker is locked to origin `https://manohargolleru.github.io`. It accepts requests only for the `/issues` route. The Cloudflare rate limit limits 10 submissions per minute per IP per Cloudflare location, not a guarantee against distributed spam.
 
 ### 5. Connect the student page
 
-Edit \`docs/config.js\` and replace its empty strings with your **public** Worker endpoint and Turnstile **site key**:
+Edit `docs/config.js` and replace its empty strings with your **public** Worker endpoint and Turnstile **site key**:
 
-\`\`\`js
+```js
 window.CDS670_CONFIG = {
   submitEndpoint: "https://cds670-reports.YOUR-SUBDOMAIN.workers.dev/issues",
   turnstileSiteKey: "YOUR_PUBLIC_TURNSTILE_SITE_KEY"
 };
-\`\`\`
+```
 
 Do not put secrets in this file. The page intentionally disables submissions until both settings are configured, while issue browsing keeps working.
 
@@ -72,13 +72,13 @@ In [GitHub Issues labels](https://github.com/ManoharGolleru/CDS-670/labels), cre
 
 | Label | Shown to students |
 | --- | --- |
-| \`student-report\` | Marks student submissions |
-| \`status: new\` | New |
-| \`status: in progress\` | In progress |
-| \`status: needs info\` | Needs info |
-| \`status: fixed\` | Fixed |
+| `student-report` | Marks student submissions |
+| `status: new` | New |
+| `status: in progress` | In progress |
+| `status: needs info` | Needs info |
+| `status: fixed` | Fixed |
 
-When investigating, replace the previous \`status:\` label with the next one. Comment directly on each GitHub Issue to answer students. Close the issue when fixed, and the website shows **Fixed**. Close with reason **Not planned** when the issue will not be addressed, and the website shows **Closed**. Reopening restores the label-based status.
+When investigating, replace the previous `status:` label with the next one. Comment directly on each GitHub Issue to answer students. Close the issue when fixed, and the website shows **Fixed**. Close with reason **Not planned** when the issue will not be addressed, and the website shows **Closed**. Reopening restores the label-based status.
 
 Note: GitHub may ignore labels that have not been created by a repository maintainer. Reports still appear as **New** by default. The label names above matter for showing non-default states.
 
@@ -89,7 +89,7 @@ After deployment:
 2. Confirm the issue list loads with no GitHub sign-in.
 3. Submit a test issue with a nickname and Turnstile.
 4. Check that the new issue appears under [GitHub Issues](https://github.com/ManoharGolleru/CDS-670/issues).
-5. Add an instructor comment and change its status to \`status: in progress\`.
+5. Add an instructor comment and change its status to `status: in progress`.
 6. Refresh the student page and expand the issue to see the reply.
 7. Close the test issue and confirm the status changes to **Fixed**.
 8. Try an empty nickname and invalid Turnstile token. Both should be rejected.
@@ -102,3 +102,27 @@ After deployment:
 - Comments are instructor-managed on GitHub. No anonymous comment form is included.
 - Turnstile and IP rate limiting reduce spam, but do not eliminate it.
 - GitHub Pages and Cloudflare Workers are independent deployments. The repository write does not deploy the Worker automatically.
+
+## Local verification
+
+Worker tests use Node.js 22's built-in runner and dummy credentials. They never contact GitHub or Cloudflare:
+
+```sh
+node --test worker/test/index.test.mjs
+```
+
+The browser tests use Playwright and an installed Google Chrome. They intercept every browser request, run the real form and Worker handler, and mock Turnstile, GitHub and the rate-limit binding. They verify submission, nickname display, instructor replies, search, filters, mobile width and New → In progress → Fixed. This does not prove a Cloudflare deployment works.
+
+```sh
+node --test test/browser.test.mjs
+```
+
+If Playwright is supplied by a shared runtime, set `NODE_PATH` to that runtime's `node_modules` directory. The application itself still has no npm dependencies.
+
+To preview the page without configuring submissions, serve only the public directory:
+
+```sh
+python3 -m http.server 8767 --bind 127.0.0.1 --directory docs
+```
+
+Open http://127.0.0.1:8767/. Reporting stays disabled until the real Worker endpoint and public site key are configured. Browsing contacts the public GitHub API. Keep the private credentials file outside this checkout, and never serve its parent directory. Real credentials are not needed for either test suite.

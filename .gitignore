@@ -1,0 +1,11 @@
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+CDS670_PRIVATE_KEYS.txt
+*secrets*.json
+*secrets*.txt
+node_modules/
+.wrangler/
+test-results/
+.DS_Store

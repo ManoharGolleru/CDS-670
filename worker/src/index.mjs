@@ -20,11 +20,11 @@ function validSubmission(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) return false;
   const { displayName, title, category, description, website, turnstileToken } = data;
   if (typeof website !== "string" || website !== "") return false;
-  if (typeof displayName !== "string" || !/^[\p{L}\p{N} _.-]{2,32}$/u.test(displayName)) return false;
-  if (typeof title !== "string" || title.length < 8 || title.length > 100 || /[\r\n]/.test(title)) return false;
-  if (typeof description !== "string" || description.length < 20 || description.length > 3000) return false;
+  if (typeof displayName !== "string" || !/^[\p{L}\p{N} _.-]{2,32}$/u.test(displayName) || displayName.trim().length < 2) return false;
+  if (typeof title !== "string" || title.trim().length < 8 || title.length > 100 || /[\r\n]/.test(title)) return false;
+  if (typeof description !== "string" || description.trim().length < 20 || description.length > 3000) return false;
   if (typeof category !== "string" || !CATEGORIES.has(category)) return false;
-  if (typeof turnstileToken !== "string" || turnstileToken.length < 1 || turnstileToken.length > 2048) return false;
+  if (typeof turnstileToken !== "string" || !turnstileToken.trim() || turnstileToken.length > 2048) return false;
   return true;
 }
 
@@ -55,7 +55,7 @@ export async function handleRequest(request, env, fetcher = fetch) {
   if (!env.GITHUB_TOKEN || !env.TURNSTILE_SECRET_KEY || !env.SUBMISSIONS) {
     return send({ error: "Report service is not configured" }, 503, allowedOrigin);
   }
-  if (!(request.headers.get("Content-Type") || "").toLowerCase().startsWith("application/json")) {
+  if ((request.headers.get("Content-Type") || "").split(";", 1)[0].trim().toLowerCase() !== "application/json") {
     return send({ error: "Expected JSON" }, 415, allowedOrigin);
   }
   const length = Number(request.headers.get("Content-Length") || 0);
@@ -86,12 +86,17 @@ export async function handleRequest(request, env, fetcher = fetch) {
     return send({ error: "Verification service is unavailable. Try again." }, 502, allowedOrigin);
   }
   const expectedHostname = new URL(allowedOrigin).hostname;
-  if (!verification.success || verification.hostname !== expectedHostname || verification.action !== "report-issue") {
+  if (verification?.success !== true || verification.hostname !== expectedHostname || verification.action !== "report-issue") {
     return send({ error: "Verification failed. Complete the check and try again." }, 403, allowedOrigin);
   }
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const limited = await env.SUBMISSIONS.limit({ key: ip });
+  let limited;
+  try {
+    limited = await env.SUBMISSIONS.limit({ key: ip });
+  } catch {
+    return send({ error: "Report service is unavailable. Try again later." }, 503, allowedOrigin);
+  }
   if (!limited.success) {
     return send({ error: "Too many reports from this network. Please retry in a minute." }, 429, allowedOrigin);
   }
@@ -129,7 +134,7 @@ export async function handleRequest(request, env, fetcher = fetch) {
   } catch {
     return send({ error: "GitHub is unavailable right now. Please retry later." }, 502, allowedOrigin);
   }
-  if (!Number.isInteger(issue.number) || typeof issue.html_url !== "string") {
+  if (!Number.isInteger(issue?.number) || typeof issue.html_url !== "string") {
     return send({ error: "GitHub returned an unexpected response." }, 502, allowedOrigin);
   }
   return send({ number: issue.number, url: issue.html_url }, 201, allowedOrigin);
