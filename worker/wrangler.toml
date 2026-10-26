@@ -1,0 +1,12 @@
+name = "cds670-reports"
+main = "src/index.mjs"
+compatibility_date = "2026-10-01"
+
+[vars]
+SITE_ORIGIN = "https://manohargolleru.github.io"
+
+# Approximate rate limit per Cloudflare location and visitor IP.
+[[ratelimits]]
+name = "SUBMISSIONS"
+namespace_id = "670"
+simple = { limit = 10, period = 60 }

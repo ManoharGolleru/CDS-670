@@ -1,2 +1,104 @@
-# CDS-670
-Tracker for OS-DPI issues 
+# CDS 670 · OS-DPI Student Issue Tracker
+
+A small public support board for students using OS-DPI in their class projects.
+
+**Student website (after GitHub Pages is enabled):** https://manohargolleru.github.io/CDS-670/
+
+## What students see
+
+- Report issues using a chosen display name. No GitHub account required.
+- Browse, search and filter the 100 most recently updated GitHub Issues.
+- Read instructor replies and see whether an issue is New, In progress, Needs info, Fixed or Closed.
+- Open an issue on GitHub for its permanent link.
+
+All reports are public. Display names are unverified nicknames, not accounts or private identities. Students are not granted GitHub repository write access.
+
+## Architecture
+
+- \`docs/\`: static HTML, CSS and browser JavaScript hosted by GitHub Pages. No build step, database or npm dependencies.
+- GitHub Issues in **this repo**: single source of truth for reports, comments and status labels. Students see GitHub data read-only through GitHub's public API.
+- \`worker/\`: a small Cloudflare Worker that validates anonymous submissions, verifies Cloudflare Turnstile, rate-limits by IP and creates GitHub Issues using a server-side token.
+- Instructors respond and change status through GitHub's normal Issues interface. The website refreshes on demand.
+
+**Security:** Never put a GitHub token in \`docs/\`, \`config.js\`, commit history, or browser JavaScript. A static GitHub Pages site cannot anonymously create GitHub Issues safely without a server-side service.
+
+## One-time setup for the instructor
+
+### 1. Enable GitHub Pages
+
+Go to [repository Settings → Pages](https://github.com/ManoharGolleru/CDS-670/settings/pages). Under **Build and deployment**, select **Deploy from a branch**, branch **main**, folder **/docs**. Save. The site will be served at https://manohargolleru.github.io/CDS-670/.
+
+If Pages is disabled at the account or repository level, an administrator must enable it first. Publishing the repo files alone does not activate Pages.
+
+### 2. Make a GitHub access token for the Worker
+
+In GitHub, create a **fine-grained personal access token**, restricted to **only** \`ManoharGolleru/CDS-670\`, with **Issues: Read and write**. Use an expiration date and rotate when necessary. Store it only as the Worker secret \`GITHUB_TOKEN\`.
+
+To use a GitHub App installation token instead, add token rotation/issuance in the Worker first. Do not store expiring access tokens in static site files.
+
+### 3. Set up Cloudflare Turnstile
+
+Create a free Turnstile site widget in Cloudflare. Add \`manohargolleru.github.io\` to its allowed hostnames. Copy its **site key** and **secret key** separately. The site key is public. The secret key is a Worker secret. The action name used here is \`report-issue\`.
+
+### 4. Publish the Worker
+
+From the \`worker/\` directory with Node.js installed:
+
+\`\`\`sh
+npx wrangler login
+npx wrangler secret put GITHUB_TOKEN
+npx wrangler secret put TURNSTILE_SECRET_KEY
+npx wrangler deploy
+\`\`\`
+
+Wrangler creates a Worker URL similar to \`https://cds670-reports.YOUR-SUBDOMAIN.workers.dev\`. The issue submission endpoint is \`https://cds670-reports.YOUR-SUBDOMAIN.workers.dev/issues\`. Keep the token and Turnstile secret private. The Worker is locked to origin \`https://manohargolleru.github.io\`. It accepts requests only for the \`/issues\` route. The Cloudflare rate limit limits 10 submissions per minute per IP per Cloudflare location, not a guarantee against distributed spam.
+
+### 5. Connect the student page
+
+Edit \`docs/config.js\` and replace its empty strings with your **public** Worker endpoint and Turnstile **site key**:
+
+\`\`\`js
+window.CDS670_CONFIG = {
+  submitEndpoint: "https://cds670-reports.YOUR-SUBDOMAIN.workers.dev/issues",
+  turnstileSiteKey: "YOUR_PUBLIC_TURNSTILE_SITE_KEY"
+};
+\`\`\`
+
+Do not put secrets in this file. The page intentionally disables submissions until both settings are configured, while issue browsing keeps working.
+
+### 6. Set up statuses
+
+In [GitHub Issues labels](https://github.com/ManoharGolleru/CDS-670/labels), create these labels if missing (exact spelling):
+
+| Label | Shown to students |
+| --- | --- |
+| \`student-report\` | Marks student submissions |
+| \`status: new\` | New |
+| \`status: in progress\` | In progress |
+| \`status: needs info\` | Needs info |
+| \`status: fixed\` | Fixed |
+
+When investigating, replace the previous \`status:\` label with the next one. Comment directly on each GitHub Issue to answer students. Close the issue when fixed, and the website shows **Fixed**. Close with reason **Not planned** when the issue will not be addressed, and the website shows **Closed**. Reopening restores the label-based status.
+
+Note: GitHub may ignore labels that have not been created by a repository maintainer. Reports still appear as **New** by default. The label names above matter for showing non-default states.
+
+## Verification checklist
+
+After deployment:
+1. Open the GitHub Pages URL in a private browser window.
+2. Confirm the issue list loads with no GitHub sign-in.
+3. Submit a test issue with a nickname and Turnstile.
+4. Check that the new issue appears under [GitHub Issues](https://github.com/ManoharGolleru/CDS-670/issues).
+5. Add an instructor comment and change its status to \`status: in progress\`.
+6. Refresh the student page and expand the issue to see the reply.
+7. Close the test issue and confirm the status changes to **Fixed**.
+8. Try an empty nickname and invalid Turnstile token. Both should be rejected.
+
+## Limitations
+
+- The public GitHub API is subject to unauthenticated rate limits. Read failures show an error and a link to GitHub.
+- The initial screen shows the 100 most recently updated issues, not a complete historical count for repositories with more than 100 reports.
+- Display names are not identities. Students cannot edit or remove other students' reports through this page.
+- Comments are instructor-managed on GitHub. No anonymous comment form is included.
+- Turnstile and IP rate limiting reduce spam, but do not eliminate it.
+- GitHub Pages and Cloudflare Workers are independent deployments. The repository write does not deploy the Worker automatically.

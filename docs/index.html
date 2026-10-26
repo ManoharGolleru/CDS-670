@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Report OS-DPI problems for CDS 670 and follow instructor updates.">
+  <title>OS-DPI Support | CDS 670</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./config.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="identity" href="./" aria-label="CDS 670 OS-DPI support homepage">
+        <span class="identity-mark">670</span>
+        <span class="identity-text"><strong>CDS 670</strong><small>OS-DPI Support</small></span>
+      </a>
+      <a class="top-link" href="https://github.com/ManoharGolleru/CDS-670/issues" target="_blank" rel="noopener noreferrer">
+        GitHub Issues <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main>
+      <div class="intro">
+        <span class="eyebrow">CLASS PROJECT · HELP DESK</span>
+        <h1>Having trouble with <span>OS-DPI?</span></h1>
+        <p>Tell us what went wrong, see if someone else reported it, and follow our updates as we work through the problems.</p>
+      </div>
+
+      <div class="stats" aria-label="Issue overview">
+        <div class="stat"><span id="stat-all" class="stat-value">–</span><span class="stat-label">Total reports</span></div>
+        <div class="stat"><span id="stat-open" class="stat-value">–</span><span class="stat-label">Still open</span></div>
+        <div class="stat"><span id="stat-progress" class="stat-value">–</span><span class="stat-label">In progress</span></div>
+        <div class="stat"><span id="stat-fixed" class="stat-value">–</span><span class="stat-label">Fixed</span></div>
+      </div>
+
+      <div class="columns">
+        <section class="panel form-panel" aria-labelledby="report-title">
+          <div class="panel-heading">
+            <span class="section-kicker">NEW REPORT</span>
+            <h2 id="report-title">Report a problem</h2>
+            <p>No GitHub account needed. Choose a display name for your report.</p>
+          </div>
+
+          <div id="setup-notice" class="notice" role="status" hidden>
+            Student reporting is not connected yet. You can browse existing reports below. Instructors: see the repository README for the one-time setup.
+          </div>
+
+          <form id="report-form">
+            <label for="display-name">Display name <span aria-hidden="true">*</span></label>
+            <input id="display-name" name="displayName" type="text" minlength="2" maxlength="32" required
+              placeholder="e.g., BlueSky27" autocomplete="nickname">
+            <p class="field-help">Any nickname is fine. Names are public and are not verified.</p>
+
+            <label for="issue-title">Short title <span aria-hidden="true">*</span></label>
+            <input id="issue-title" name="title" type="text" minlength="8" maxlength="100" required
+              placeholder="e.g., App freezes when opening a design">
+
+            <label for="category">Where is the problem?</label>
+            <select id="category" name="category">
+              <option>OS-DPI setup</option>
+              <option>Design / code</option>
+              <option>Testing</option>
+              <option>Class assignment</option>
+              <option>Other</option>
+            </select>
+
+            <label for="description">What happened? <span aria-hidden="true">*</span></label>
+            <textarea id="description" name="description" rows="6" minlength="20" maxlength="3000" required
+              placeholder="What were you trying to do? What happened instead? Include the error message or steps to reproduce."></textarea>
+            <p class="field-help">Include enough detail to reproduce it. Do not post passwords, personal data, or private class materials.</p>
+
+            <div class="honeypot" aria-hidden="true">
+              <label for="website">Leave this field blank</label>
+              <input id="website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+
+            <div id="turnstile-container" class="verification" aria-label="Spam protection"></div>
+            <button id="submit-button" class="primary-button" type="submit" disabled>Post report <span aria-hidden="true">→</span></button>
+            <p id="form-feedback" class="form-feedback" role="status" aria-live="polite" hidden></p>
+          </form>
+        </section>
+
+        <section class="panel issues-panel" aria-labelledby="issues-title">
+          <div class="issues-head">
+            <div>
+              <span class="section-kicker">SHARED PROBLEM LIST</span>
+              <h2 id="issues-title">Student reports</h2>
+              <p>Updates and replies from GitHub, displayed here.</p>
+            </div>
+            <button id="refresh-button" class="refresh-button" type="button">Refresh</button>
+          </div>
+          <label class="search-label" for="search">Search reports</label>
+          <input id="search" class="search-input" type="search" placeholder="Search titles, descriptions, names…">
+          <div class="filters" aria-label="Filter by status">
+            <button class="filter active" type="button" data-filter="all" aria-pressed="true">All</button>
+            <button class="filter" type="button" data-filter="new" aria-pressed="false">New</button>
+            <button class="filter" type="button" data-filter="in-progress" aria-pressed="false">In progress</button>
+            <button class="filter" type="button" data-filter="needs-info" aria-pressed="false">Needs info</button>
+            <button class="filter" type="button" data-filter="fixed" aria-pressed="false">Fixed</button>
+          </div>
+          <div id="issue-message" class="issue-message" role="status" aria-live="polite">Loading reports…</div>
+          <div id="issue-list" class="issue-list"></div>
+          <p class="listing-note">Showing the 100 most recently updated reports. <a href="https://github.com/ManoharGolleru/CDS-670/issues" target="_blank" rel="noopener noreferrer">See all on GitHub ↗</a></p>
+        </section>
+      </div>
+      <div class="info-strip"><strong>How it works</strong><span>1. Post a problem</span><span>2. We investigate and reply</span><span>3. Watch the status change</span></div>
+    </main>
+    <footer><span>CDS 670 · OS-DPI class project support</span><span>Reports are publicly visible in the CDS-670 GitHub repository.</span></footer>
+  </div>
+</body>
+</html>
