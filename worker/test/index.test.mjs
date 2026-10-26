@@ -10,9 +10,12 @@ const payload = {
 };
 
 function request(data = payload, options = {}) {
+  const form = new FormData();
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    for (const [key, value] of Object.entries(data)) form.set(key, value);
+  }
   return new Request("https://example.workers.dev/issues", {
-    method: "POST", headers: { Origin: origin, "Content-Type": "application/json" },
-    body: JSON.stringify(data), ...options
+    method: "POST", headers: { Origin: origin }, body: form, ...options
   });
 }
 
@@ -42,7 +45,7 @@ function fixture({ verification = { success: true, hostname: new URL(origin).hos
 test("valid report creates exactly one issue after verification and rate limiting", async () => {
   const f = fixture();
   const response = await f.run(request({ ...payload, title: "Report @someone", description: payload.description + " @someone" }, {
-    headers: { Origin: origin, "Content-Type": "application/json; charset=utf-8", "CF-Connecting-IP": "192.0.2.1" }
+    headers: { Origin: origin, "CF-Connecting-IP": "192.0.2.1" }
   }));
   assert.equal(response.status, 201);
   assert.deepEqual(f.calls.map(c => c.service), ["verification", "limit", "github"]);
@@ -97,7 +100,7 @@ for (const value of [null, [], "text", {}]) {
   });
 }
 
-for (const contentType of ["text/plain", "application/jsonp", "application/json-invalid"]) {
+for (const contentType of ["text/plain", "application/json", "application/jsonp"]) {
   test("rejects content type " + contentType, async () => {
     const f = fixture();
     assert.equal((await f.run(request(payload, { headers: { Origin: origin, "Content-Type": contentType } }))).status, 415);
@@ -105,12 +108,20 @@ for (const contentType of ["text/plain", "application/jsonp", "application/json-
   });
 }
 
-test("rejects malformed and oversized JSON", async () => {
-  for (const [body, status] of [["{", 400], ["x".repeat(10001), 413]]) {
-    const f = fixture();
-    assert.equal((await f.run(request(payload, { body }))).status, status);
-    assert.equal(f.calls.length, 0);
-  }
+test("rejects malformed form data", async () => {
+  const f = fixture();
+  assert.equal((await f.run(request(payload, { body: "broken", headers: {
+    Origin: origin, "Content-Type": "multipart/form-data; boundary=fixture"
+  } }))).status, 400);
+  assert.equal(f.calls.length, 0);
+});
+
+test("rejects oversized declared requests before reading their body", async () => {
+  const f = fixture();
+  assert.equal((await f.run(request(payload, { headers: {
+    Origin: origin, "Content-Type": "multipart/form-data; boundary=fixture", "Content-Length": String(11 * 1024 * 1024)
+  } }))).status, 413);
+  assert.equal(f.calls.length, 0);
 });
 
 test("rejects unsupported paths and methods", async () => {

@@ -12,11 +12,17 @@ const list = document.getElementById("issue-list");
 const message = document.getElementById("issue-message");
 const search = document.getElementById("search");
 const refresh = document.getElementById("refresh-button");
+const fileInput = document.getElementById("attachments");
+const fileList = document.getElementById("selected-files");
+const MAX_FILES = 3;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 let issues = [];
 let filter = "all";
 let widgetId = null;
 let verificationToken = "";
+let selectedFiles = [];
+let submitting = false;
 let expandedIssue = Number(new URLSearchParams(window.location.search).get("issue")) || null;
 
 function element(tag, className, content) {
@@ -59,9 +65,23 @@ function reportDetails(issue) {
   const prefix = "<!-- cds670-student-report -->\n**Display name:** ";
   if (raw.startsWith(prefix)) {
     const match = /^<!-- cds670-student-report -->\n\*\*Display name:\*\* ([^\n]+)\n\*\*Area:\*\* ([^\n]+)\n\n### Description\n([\s\S]*)$/.exec(raw);
-    if (match) return { name: match[1], category: match[2], description: match[3] };
+    if (match) {
+      let description = match[3];
+      let attachments = [];
+      const marker = "\n\n<!-- cds670-attachments -->\n### Attachments\n";
+      const start = description.lastIndexOf(marker);
+      if (start !== -1) {
+        const lines = description.slice(start + marker.length).split("\n");
+        const parsed = lines.map(line => /^- \[([a-zA-Z0-9._-]+)\]\((https:\/\/github\.com\/ManoharGolleru\/CDS-670\/releases\/download\/student-attachments\/[a-zA-Z0-9._-]+)\)$/.exec(line));
+        if (parsed.length <= MAX_FILES && parsed.every(Boolean)) {
+          attachments = parsed.map(file => ({ name: file[1], url: file[2] }));
+          description = description.slice(0, start);
+        }
+      }
+      return { name: match[1], category: match[2], description, attachments };
+    }
   }
-  return { name: issue.user?.login || "GitHub user", category: "", description: raw };
+  return { name: issue.user?.login || "GitHub user", category: "", description: raw, attachments: [] };
 }
 
 function githubLink(url, title) {
@@ -131,6 +151,16 @@ function makeIssue(issue) {
   }
   body.append(element("div", "issue-detail-label", "Problem"));
   body.append(element("p", "issue-description", detail.description || "No description provided."));
+  if (detail.attachments.length) {
+    body.append(element("div", "issue-detail-label", "Attachments"));
+    const downloads = element("ul", "attachment-downloads");
+    for (const file of detail.attachments) {
+      const item = element("li");
+      item.append(githubLink(file.url, "Download " + file.name));
+      downloads.append(item);
+    }
+    body.append(downloads);
+  }
   body.append(element("div", "issue-detail-label", "Instructor replies"));
   const comments = element("div", "comments");
   body.append(comments, githubLink(issue.html_url, "Open issue on GitHub ↗"));
@@ -202,6 +232,41 @@ function clearToken() {
   if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);
 }
 
+function renderSelectedFiles() {
+  fileList.replaceChildren();
+  selectedFiles.forEach((file, index) => {
+    const row = element("li");
+    const size = file.size >= 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+      : file.size >= 1024 ? Math.ceil(file.size / 1024) + " KB" : file.size + " B";
+    row.append(element("span", "selected-file-name", file.name + " · " + size));
+    const remove = element("button", "remove-file", "Remove");
+    remove.type = "button";
+    remove.disabled = submitting;
+    remove.setAttribute("aria-label", "Remove " + file.name);
+    remove.addEventListener("click", () => {
+      selectedFiles.splice(index, 1);
+      renderSelectedFiles();
+    });
+    row.append(remove);
+    fileList.append(row);
+  });
+}
+
+fileInput.addEventListener("change", () => {
+  const next = [...selectedFiles, ...fileInput.files];
+  fileInput.value = "";
+  if (next.length > MAX_FILES) return showFeedback("Attach up to 3 files per report.", true);
+  if (next.reduce((total, file) => total + file.size, 0) > MAX_ATTACHMENT_BYTES) {
+    return showFeedback("Attachments must total 10 MB or less.", true);
+  }
+  if (next.some(file => file.name.length > 120 || /[\x00-\x1f\x7f]/.test(file.name))) {
+    return showFeedback("Use attachment filenames of 120 characters or fewer, without control characters.", true);
+  }
+  selectedFiles = next;
+  feedback.hidden = true;
+  renderSelectedFiles();
+});
+
 function setupSubmission() {
   const endpoint = config.submitEndpoint;
   const sitekey = config.turnstileSiteKey;
@@ -235,6 +300,7 @@ function setupSubmission() {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (submitting) return;
   if (!form.reportValidity()) return;
   if (!verificationToken) {
     showFeedback("Please complete the verification before posting.", true);
@@ -242,21 +308,24 @@ form.addEventListener("submit", async (event) => {
   }
   const endpoint = config.submitEndpoint;
   const previousName = nameInput.value.trim();
+  const payload = new FormData();
+  payload.set("displayName", previousName);
+  payload.set("title", document.getElementById("issue-title").value.trim());
+  payload.set("category", document.getElementById("category").value);
+  payload.set("description", document.getElementById("description").value.trim());
+  payload.set("website", document.getElementById("website").value);
+  payload.set("turnstileToken", verificationToken);
+  for (const file of selectedFiles) payload.append("attachments", file, file.name);
+  submitting = true;
+  fileInput.disabled = true;
+  renderSelectedFiles();
   submitButton.disabled = true;
   submitButton.textContent = "Posting…";
   feedback.hidden = true;
   try {
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        displayName: previousName,
-        title: document.getElementById("issue-title").value.trim(),
-        category: document.getElementById("category").value,
-        description: document.getElementById("description").value.trim(),
-        website: document.getElementById("website").value,
-        turnstileToken: verificationToken
-      })
+      body: payload
     });
     let result;
     try { result = await response.json(); } catch { result = {}; }
@@ -264,6 +333,8 @@ form.addEventListener("submit", async (event) => {
     showFeedback("Report #" + result.number + " submitted successfully.", false, result.url);
     try { localStorage.setItem("cds670-name", previousName); } catch {}
     form.reset();
+    selectedFiles = [];
+    renderSelectedFiles();
     nameInput.value = previousName;
     expandedIssue = result.number;
     await loadIssues();
@@ -271,6 +342,9 @@ form.addEventListener("submit", async (event) => {
     showFeedback(error.message || "Submission failed. Please try again.", true);
   } finally {
     clearToken();
+    submitting = false;
+    fileInput.disabled = false;
+    renderSelectedFiles();
     submitButton.disabled = false;
     submitButton.textContent = "Post report →";
   }

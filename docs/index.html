@@ -6,9 +6,9 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Report OS-DPI problems for CDS 670 and follow instructor updates.">
   <title>OS-DPI Support | CDS 670</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=attachments-1">
   <script src="./config.js" defer></script>
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=attachments-1" defer></script>
 </head>
 <body>
   <div class="shell">
@@ -71,6 +71,11 @@
             <textarea id="description" name="description" rows="6" minlength="20" maxlength="3000" required
               placeholder="What were you trying to do? What happened instead? Include the error message or steps to reproduce."></textarea>
             <p class="field-help">Include enough detail to reproduce it. Do not post passwords, personal data, or private class materials.</p>
+
+            <label for="attachments">Attach files <span class="optional-label">(optional)</span></label>
+            <input id="attachments" name="attachments" type="file" multiple aria-describedby="attachments-help">
+            <p id="attachments-help" class="field-help">ZIPs, OS-DPI files, screenshots, or other supporting files. Up to 3 files, 10 MB total. Attachments are public.</p>
+            <ul id="selected-files" class="selected-files" aria-label="Selected attachments" aria-live="polite"></ul>
 
             <div class="honeypot" aria-hidden="true">
               <label for="website">Leave this field blank</label>

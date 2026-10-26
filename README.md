@@ -9,6 +9,8 @@ A small public support board for students using OS-DPI in their class projects.
 - Report issues using a chosen display name. No GitHub account required.
 - Browse, search and filter the 100 most recently updated GitHub Issues.
 - Read instructor replies and see whether an issue is New, In progress, Needs info, Fixed or Closed.
+- Attach up to 3 files (10 MB combined), including ZIPs, OS-DPI files and screenshots.
+- Download supporting files from either the student page or the GitHub issue.
 - Open an issue on GitHub for its permanent link.
 
 All reports are public. Display names are unverified nicknames, not accounts or private identities. Students are not granted GitHub repository write access.
@@ -18,6 +20,7 @@ All reports are public. Display names are unverified nicknames, not accounts or 
 - `docs/`: static HTML, CSS and browser JavaScript hosted by GitHub Pages. No build step, database or npm dependencies.
 - GitHub Issues in **this repo**: single source of truth for reports, comments and status labels. Students see GitHub data read-only through GitHub's public API.
 - `worker/`: a small Cloudflare Worker that validates anonymous submissions, verifies Cloudflare Turnstile, rate-limits by IP and creates GitHub Issues using a server-side token.
+- Small attachments are uploaded as GitHub release assets under the `student-attachments` tag and linked from the issue body. Files stay out of Git history; no additional storage subscription is needed.
 - Instructors respond and change status through GitHub's normal Issues interface. The website refreshes on demand.
 
 **Security:** Never put a GitHub token in `docs/`, `config.js`, commit history, or browser JavaScript. A static GitHub Pages site cannot anonymously create GitHub Issues safely without a server-side service.
@@ -32,9 +35,11 @@ If Pages is disabled at the account or repository level, an administrator must e
 
 ### 2. Make a GitHub access token for the Worker
 
-In GitHub, create a **fine-grained personal access token**, restricted to **only** `ManoharGolleru/CDS-670`, with **Issues: Read and write**. Use an expiration date and rotate when necessary. Store it only as the Worker secret `GITHUB_TOKEN`.
+In GitHub, create a **fine-grained personal access token**, restricted to **only** `ManoharGolleru/CDS-670`, with **Issues: Read and write** and **Contents: Read and write**. Use an expiration date and rotate when necessary. Store it only as the Worker secret `GITHUB_TOKEN`. GitHub requires Contents write permission to upload release files; this permission also allows repository-content changes, so keep access restricted to this one repository.
 
 To use a GitHub App installation token instead, add token rotation/issuance in the Worker first. Do not store expiring access tokens in static site files.
+
+Before enabling attachments, create a public, mutable GitHub release tagged **`student-attachments`**, titled **Student report attachments**, targeting `main`. Mark it as not the latest release. The Worker looks up this fixed tag; it does not create releases. Do not delete the release or its files while reports still reference them.
 
 ### 3. Set up Cloudflare Turnstile
 
@@ -92,7 +97,8 @@ After deployment:
 5. Add an instructor comment and change its status to `status: in progress`.
 6. Refresh the student page and expand the issue to see the reply.
 7. Close the test issue and confirm the status changes to **Fixed**.
-8. Try an empty nickname and invalid Turnstile token. Both should be rejected.
+8. Attach a small ZIP and a text file; verify both download byte-for-byte from the page and the GitHub issue.
+9. Try an empty nickname, invalid Turnstile token, more than 3 files and more than 10 MB combined. Each should be rejected without creating an issue.
 
 ## Limitations
 
@@ -108,10 +114,10 @@ After deployment:
 Worker tests use Node.js 22's built-in runner and dummy credentials. They never contact GitHub or Cloudflare:
 
 ```sh
-node --test worker/test/index.test.mjs
+node --test worker/test/*.test.mjs
 ```
 
-The browser tests use Playwright and an installed Google Chrome. They intercept every browser request, run the real form and Worker handler, and mock Turnstile, GitHub and the rate-limit binding. They verify submission, nickname display, instructor replies, search, filters, mobile width and New → In progress → Fixed. This does not prove a Cloudflare deployment works.
+The browser tests use Playwright and an installed Google Chrome. They intercept every browser request, run the real form and Worker handler, and mock Turnstile, GitHub and the rate-limit binding. They verify submission, nickname display, instructor replies, search, filters, mobile width, ZIP/text attachments, limits, upload retry and New → In progress → Fixed. This does not prove a Cloudflare deployment works.
 
 ```sh
 node --test test/browser.test.mjs
@@ -126,3 +132,11 @@ python3 -m http.server 8767 --bind 127.0.0.1 --directory docs
 ```
 
 Open http://127.0.0.1:8767/. Reporting stays disabled until the real Worker endpoint and public site key are configured. Browsing contacts the public GitHub API. Keep the private credentials file outside this checkout, and never serve its parent directory. Real credentials are not needed for either test suite.
+
+## Attachment behavior
+
+Reports use browser-native multipart form data. Turnstile and rate limiting must pass before any release file is uploaded. The server enforces the 3-file and 10 MB combined limits, including requests without a Content-Length header. Files are never unpacked or executed by the Worker. Names are normalized to letters, numbers, dots, underscores and hyphens for safe GitHub links; each stored asset has a unique identifier to prevent collisions.
+
+If an upload fails, the report is not created and the form keeps the selected files for retry. Uploaded assets are removed when a later upload fails or GitHub definitively rejects issue creation. If the issue-creation result is uncertain after a network failure, assets are retained so a possibly-created issue keeps working links. An instructor can inspect the attachment release to remove an unreferenced upload.
+
+All attachments are public, just like the reports. Closing an issue keeps its files available. To remove a file, an instructor deletes the release asset and removes its link from the issue body. The student site only creates attachment links for the repository's own attachment release and renders other report text as plain text.

@@ -53,6 +53,14 @@ main { padding: 46px 0 60px; }
 #report-form textarea { resize: vertical; min-height: 130px; }
 #report-form input::placeholder, #report-form textarea::placeholder, .search-input::placeholder { color: #95a1b1; }
 .field-help { margin: 5px 0 0; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.optional-label { font-weight: 400; color: var(--muted); }
+.selected-files { list-style: none; padding: 0; margin: 10px 0 0; }
+.selected-files:empty { display: none; }
+.selected-files li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.selected-file-name { min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.remove-file { flex-shrink: 0; border: 0; background: none; color: var(--blue); padding: 4px; font-size: 12px; }
+.attachment-downloads { padding-left: 18px; margin: 0 0 12px; }
+.attachment-downloads a { margin-top: 3px; overflow-wrap: anywhere; }
 .honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; left: -9999px; }
 .verification { margin-top: 24px; min-height: 0; }
 .verification:not(:empty) { margin-bottom: 15px; }

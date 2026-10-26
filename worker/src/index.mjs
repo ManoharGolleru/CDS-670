@@ -1,3 +1,5 @@
+import { readReport, uploadAttachments, deleteAttachments, attachmentMarkdown } from "./attachments.mjs";
+
 const GITHUB_ISSUES_URL = "https://api.github.com/repos/ManoharGolleru/CDS-670/issues";
 const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const CATEGORIES = new Set(["OS-DPI setup", "Design / code", "Testing", "Class assignment", "Other"]);
@@ -55,20 +57,9 @@ export async function handleRequest(request, env, fetcher = fetch) {
   if (!env.GITHUB_TOKEN || !env.TURNSTILE_SECRET_KEY || !env.SUBMISSIONS) {
     return send({ error: "Report service is not configured" }, 503, allowedOrigin);
   }
-  if ((request.headers.get("Content-Type") || "").split(";", 1)[0].trim().toLowerCase() !== "application/json") {
-    return send({ error: "Expected JSON" }, 415, allowedOrigin);
-  }
-  const length = Number(request.headers.get("Content-Length") || 0);
-  if (length > 10000) return send({ error: "Report is too large" }, 413, allowedOrigin);
-
-  let data;
-  try {
-    const text = await request.text();
-    if (text.length > 10000) return send({ error: "Report is too large" }, 413, allowedOrigin);
-    data = JSON.parse(text);
-  } catch {
-    return send({ error: "Invalid JSON" }, 400, allowedOrigin);
-  }
+  const report = await readReport(request);
+  if (report.error) return send({ error: report.error }, report.status, allowedOrigin);
+  const { data, files } = report;
   if (!validSubmission(data)) {
     return send({ error: "Check your name, title, description, and verification fields." }, 400, allowedOrigin);
   }
@@ -101,6 +92,13 @@ export async function handleRequest(request, env, fetcher = fetch) {
     return send({ error: "Too many reports from this network. Please retry in a minute." }, 429, allowedOrigin);
   }
 
+  let attachments;
+  try {
+    attachments = await uploadAttachments(files, env.GITHUB_TOKEN, fetcher);
+  } catch {
+    return send({ error: "We couldn't upload the attachments. Your report has not been posted. Please retry later." }, 502, allowedOrigin);
+  }
+
   // A GitHub issue is written by the token owner. The student's name is a public,
   // self-chosen display name, not proof of identity.
   const body = [
@@ -110,7 +108,7 @@ export async function handleRequest(request, env, fetcher = fetch) {
     "",
     "### Description",
     data.description.trim().replace(/@/g, "@\u200b")
-  ].join("\n");
+  ].join("\n") + attachmentMarkdown(attachments);
 
   let issue;
   try {
@@ -129,9 +127,14 @@ export async function handleRequest(request, env, fetcher = fetch) {
         labels: ["student-report", "status: new"]
       })
     });
-    if (!response.ok) return send({ error: "GitHub did not accept this report. Please retry later." }, 502, allowedOrigin);
+    if (!response.ok) {
+      await deleteAttachments(attachments, env.GITHUB_TOKEN, fetcher);
+      return send({ error: "GitHub did not accept this report. Please retry later." }, 502, allowedOrigin);
+    }
     issue = await response.json();
   } catch {
+    // Keep uploads if the result is uncertain: GitHub may have created an issue
+    // before the connection failed, and its download links must remain usable.
     return send({ error: "GitHub is unavailable right now. Please retry later." }, 502, allowedOrigin);
   }
   if (!Number.isInteger(issue?.number) || typeof issue.html_url !== "string") {
