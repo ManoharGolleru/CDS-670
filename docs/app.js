@@ -87,6 +87,7 @@ async function renderComments(issue, container) {
   }
   try {
     const response = await fetch(API + "/issues/" + issue.number + "/comments?per_page=100", {
+      cache: "no-store",
       headers: { Accept: "application/vnd.github+json" }
     });
     if (!response.ok) throw new Error("Reply service unavailable");
@@ -171,6 +172,7 @@ async function loadIssues() {
   message.textContent = "Loading reports…";
   try {
     const response = await fetch(API + "/issues?state=all&sort=updated&direction=desc&per_page=100", {
+      cache: "no-store",
       headers: { Accept: "application/vnd.github+json" }
     });
     if (!response.ok) throw new Error("GitHub returned " + response.status);
