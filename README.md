@@ -6,14 +6,14 @@ A small public support board for students using OS-DPI in their class projects.
 
 ## What students see
 
-- Report issues using a chosen display name. No GitHub account required.
+- Report issues using their assigned group number. No GitHub account required.
 - Browse, search and filter the 100 most recently updated GitHub Issues.
 - Read instructor replies and see whether an issue is New, In progress, Needs info, Fixed or Closed.
 - Attach up to 3 files (10 MB combined), including ZIPs, OS-DPI files and screenshots.
 - Download supporting files from either the student page or the GitHub issue.
 - Open an issue on GitHub for its permanent link.
 
-All reports are public. Display names are unverified nicknames, not accounts or private identities. Students are not granted GitHub repository write access.
+All reports are public. Group numbers are self-reported and public; they are not authenticated identities. Students are not granted GitHub repository write access.
 
 ## Architecture
 
@@ -92,19 +92,19 @@ Note: GitHub may ignore labels that have not been created by a repository mainta
 After deployment:
 1. Open the GitHub Pages URL in a private browser window.
 2. Confirm the issue list loads with no GitHub sign-in.
-3. Submit a test issue with a nickname and Turnstile.
+3. Submit a test issue with a group number and Turnstile.
 4. Check that the new issue appears under [GitHub Issues](https://github.com/ManoharGolleru/CDS-670/issues).
 5. Add an instructor comment and change its status to `status: in progress`.
 6. Refresh the student page and expand the issue to see the reply.
 7. Close the test issue and confirm the status changes to **Fixed**.
 8. Attach a small ZIP and a text file; verify both download byte-for-byte from the page and the GitHub issue.
-9. Try an empty nickname, invalid Turnstile token, more than 3 files and more than 10 MB combined. Each should be rejected without creating an issue.
+9. Try an empty group number, invalid Turnstile token, more than 3 files and more than 10 MB combined. Each should be rejected without creating an issue.
 
 ## Limitations
 
 - The public GitHub API is subject to unauthenticated rate limits. Read failures show an error and a link to GitHub.
 - The initial screen shows the 100 most recently updated issues, not a complete historical count for repositories with more than 100 reports.
-- Display names are not identities. Students cannot edit or remove other students' reports through this page.
+- Group numbers are not identities. Students cannot edit or remove other students' reports through this page.
 - Comments are instructor-managed on GitHub. No anonymous comment form is included.
 - Turnstile and IP rate limiting reduce spam, but do not eliminate it.
 - GitHub Pages and Cloudflare Workers are independent deployments. The repository write does not deploy the Worker automatically.
@@ -117,7 +117,7 @@ Worker tests use Node.js 22's built-in runner and dummy credentials. They never 
 node --test worker/test/*.test.mjs
 ```
 
-The browser tests use Playwright and an installed Google Chrome. They intercept every browser request, run the real form and Worker handler, and mock Turnstile, GitHub and the rate-limit binding. They verify submission, nickname display, instructor replies, search, filters, mobile width, ZIP/text attachments, limits, upload retry and New → In progress → Fixed. This does not prove a Cloudflare deployment works.
+The browser tests use Playwright and an installed Google Chrome. They intercept every browser request, run the real form and Worker handler, and mock Turnstile, GitHub and the rate-limit binding. They verify submission, group number display, instructor replies, search, filters, mobile width, ZIP/text attachments, limits, upload retry and New → In progress → Fixed. This does not prove a Cloudflare deployment works.
 
 ```sh
 node --test test/browser.test.mjs

@@ -6,9 +6,9 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Report OS-DPI problems for CDS 670 and follow instructor updates.">
   <title>OS-DPI Support | CDS 670</title>
-  <link rel="stylesheet" href="./styles.css?v=attachments-1">
+  <link rel="stylesheet" href="./styles.css?v=group-number-1">
   <script src="./config.js" defer></script>
-  <script src="./app.js?v=attachments-1" defer></script>
+  <script src="./app.js?v=group-number-1" defer></script>
 </head>
 <body>
   <div class="shell">
@@ -41,7 +41,7 @@
           <div class="panel-heading">
             <span class="section-kicker">NEW REPORT</span>
             <h2 id="report-title">Report a problem</h2>
-            <p>No GitHub account needed. Choose a display name for your report.</p>
+            <p>No GitHub account needed. Enter your group number with your report.</p>
           </div>
 
           <div id="setup-notice" class="notice" role="status" hidden>
@@ -49,10 +49,10 @@
           </div>
 
           <form id="report-form">
-            <label for="display-name">Display name <span aria-hidden="true">*</span></label>
-            <input id="display-name" name="displayName" type="text" minlength="2" maxlength="32" required
-              placeholder="e.g., BlueSky27" autocomplete="nickname">
-            <p class="field-help">Any nickname is fine. Names are public and are not verified.</p>
+            <label for="group-number">Group number <span aria-hidden="true">*</span></label>
+            <input id="group-number" name="groupNumber" type="text" minlength="1" maxlength="32" required
+              placeholder="e.g., 2" autocomplete="off">
+            <p class="field-help">Use your assigned group number so we can track your group’s reports. Group numbers are public.</p>
 
             <label for="issue-title">Short title <span aria-hidden="true">*</span></label>
             <input id="issue-title" name="title" type="text" minlength="8" maxlength="100" required
@@ -98,7 +98,7 @@
             <button id="refresh-button" class="refresh-button" type="button">Refresh</button>
           </div>
           <label class="search-label" for="search">Search reports</label>
-          <input id="search" class="search-input" type="search" placeholder="Search titles, descriptions, names…">
+          <input id="search" class="search-input" type="search" placeholder="Search titles, descriptions, group numbers…">
           <div class="filters" aria-label="Filter by status">
             <button class="filter active" type="button" data-filter="all" aria-pressed="true">All</button>
             <button class="filter" type="button" data-filter="new" aria-pressed="false">New</button>

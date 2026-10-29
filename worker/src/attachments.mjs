@@ -4,7 +4,7 @@ const MAX_REQUEST_BYTES = MAX_ATTACHMENT_BYTES + 64 * 1024;
 const REPO_URL = "https://api.github.com/repos/ManoharGolleru/CDS-670";
 const RELEASE_TAG = "student-attachments";
 const DOWNLOAD_PREFIX = "https://github.com/ManoharGolleru/CDS-670/releases/download/" + RELEASE_TAG + "/";
-const FIELDS = ["displayName", "title", "category", "description", "website", "turnstileToken"];
+const FIELDS = ["groupNumber", "title", "category", "description", "website", "turnstileToken"];
 
 export async function readReport(request) {
   const contentType = request.headers.get("Content-Type") || "";

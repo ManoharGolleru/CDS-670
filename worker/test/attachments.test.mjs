@@ -7,7 +7,7 @@ import { MAX_ATTACHMENT_BYTES, readReport, attachmentMarkdown } from "../src/att
 const origin = "https://manohargolleru.github.io";
 const repo = "https://api.github.com/repos/ManoharGolleru/CDS-670";
 const prefix = "https://github.com/ManoharGolleru/CDS-670/releases/download/student-attachments/";
-const payload = { displayName: "CDS670-Test", title: "Attachment test report", category: "Testing",
+const payload = { groupNumber: "2", title: "Attachment test report", category: "Testing",
   description: "A report with a small supporting attachment.", website: "", turnstileToken: "dummy-token" };
 
 function request(files = [], change) {
@@ -84,7 +84,7 @@ test("rejects unnamed attachment parts", async () => {
 });
 
 for (const [name, change] of [
-  ["duplicate text fields", form => form.append("displayName", "Other")],
+  ["duplicate text fields", form => form.append("groupNumber", "Other")],
   ["unexpected fields", form => form.set("extra", "value")],
   ["text instead of a file", form => form.append("attachments", "fake-file")],
   ["file instead of a text field", form => form.set("title", smallFile("title.txt"))]

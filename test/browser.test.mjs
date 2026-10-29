@@ -102,10 +102,10 @@ async function harness(t, configured = true) {
   return { page, issues, comments, assets, state, writes: () => writes };
 }
 
-test("offline browser: submission, nickname, reply, search, filters and status lifecycle", async t => {
+test("offline browser: submission, group number, reply, search, filters and status lifecycle", async t => {
   const h = await harness(t);
   const { page, issues, comments } = h;
-  await page.locator("#display-name").fill("CDS670-Test");
+  await page.locator("#group-number").fill("2");
   await page.locator("#issue-title").fill("Browser test report");
   await page.locator("#category").selectOption("Testing");
   await page.locator("#description").fill("Open a design, then observe the reported behavior.");
@@ -113,11 +113,11 @@ test("offline browser: submission, nickname, reply, search, filters and status l
   await page.getByText("Report #1 submitted successfully.").waitFor();
   assert.equal(h.writes(), 1);
   await page.locator(".issue-card[open] .issue-meta").first().waitFor();
-  assert.match(await page.locator(".issue-card").innerText(), /By CDS670-Test/);
+  assert.match(await page.locator(".issue-card").innerText(), /Group number: 2/);
   assert.equal(await page.locator(".status").innerText(), "New");
   assert.equal(await page.locator("#stat-all").innerText(), "1");
-  assert.equal(await page.locator("#display-name").inputValue(), "CDS670-Test");
-  assert.equal(await page.evaluate(() => localStorage.getItem("cds670-name")), "CDS670-Test");
+  assert.equal(await page.locator("#group-number").inputValue(), "2");
+  assert.equal(await page.evaluate(() => localStorage.getItem("cds670-group-number")), "2");
 
   comments.push({ user: { login: "ManoharGolleru" }, body: "Instructor test reply.", created_at: "2026-10-26T12:00:00Z" });
   issues[0].comments = 1;
@@ -132,7 +132,7 @@ test("offline browser: submission, nickname, reply, search, filters and status l
   assert.equal(await page.locator(".issue-card").count(), 1);
   await page.locator("#search").fill("no-match");
   assert.equal(await page.locator(".issue-card").count(), 0);
-  await page.locator("#search").fill("CDS670-Test");
+  await page.locator("#search").fill("2");
   assert.equal(await page.locator(".issue-card").count(), 1);
   await page.getByRole("button", { name: "All", exact: true }).click();
   issues[0].state = "closed";
@@ -154,7 +154,7 @@ test("offline browser: unconfigured reporting stays disabled and browsing works"
 });
 
 async function fillReport(page) {
-  await page.locator("#display-name").fill("CDS670-Test");
+  await page.locator("#group-number").fill("2");
   await page.locator("#issue-title").fill("Attachment browser test");
   await page.locator("#description").fill("This report includes public attachment test fixtures.");
 }
@@ -224,7 +224,7 @@ test("offline browser: untrusted attachment text never becomes an external link"
   const { page, issues } = await harness(t);
   issues.push({ number: 1, title: "Untrusted attachment text", state: "open", comments: 0,
     html_url: "https://github.com/ManoharGolleru/CDS-670/issues/1", user: { login: "ManoharGolleru" },
-    body: "<!-- cds670-student-report -->\n**Display name:** CDS670-Test\n**Area:** Testing\n\n### Description\nA test of untrusted attachment text.\n\n<!-- cds670-attachments -->\n### Attachments\n- [file.zip](https://evil.example/file.zip)" });
+    body: "<!-- cds670-student-report -->\n**Group number:** 2\n**Area:** Testing\n\n### Description\nA test of untrusted attachment text.\n\n<!-- cds670-attachments -->\n### Attachments\n- [file.zip](https://evil.example/file.zip)" });
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   await page.getByText("Untrusted attachment text", { exact: true }).click();
   assert.equal(await page.locator('a[href*="evil.example"]').count(), 0);

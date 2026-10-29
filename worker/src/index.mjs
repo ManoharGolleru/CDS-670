@@ -20,9 +20,9 @@ function send(data, status, origin) {
 
 function validSubmission(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) return false;
-  const { Groupnumber, title, category, description, website, turnstileToken } = data;
+  const { groupNumber, title, category, description, website, turnstileToken } = data;
   if (typeof website !== "string" || website !== "") return false;
-  if (typeof Groupnumber !== "string" || !/^[\p{L}\p{N} _.-]{2,32}$/u.test(Groupnumber) || Groupnumber.trim().length < 2) return false;
+  if (typeof groupNumber !== "string" || !/^[\p{L}\p{N} _.-]{1,32}$/u.test(groupNumber) || groupNumber.trim().length < 1) return false;
   if (typeof title !== "string" || title.trim().length < 8 || title.length > 100 || /[\r\n]/.test(title)) return false;
   if (typeof description !== "string" || description.trim().length < 20 || description.length > 3000) return false;
   if (typeof category !== "string" || !CATEGORIES.has(category)) return false;
@@ -61,7 +61,7 @@ export async function handleRequest(request, env, fetcher = fetch) {
   if (report.error) return send({ error: report.error }, report.status, allowedOrigin);
   const { data, files } = report;
   if (!validSubmission(data)) {
-    return send({ error: "Check your name, title, description, and verification fields." }, 400, allowedOrigin);
+    return send({ error: "Check your group number, title, description, and verification fields." }, 400, allowedOrigin);
   }
 
   let verification;
@@ -99,11 +99,10 @@ export async function handleRequest(request, env, fetcher = fetch) {
     return send({ error: "We couldn't upload the attachments. Your report has not been posted. Please retry later." }, 502, allowedOrigin);
   }
 
-  // A GitHub issue is written by the token owner. The student's name is a public,
-  // self-chosen Group number, not proof of identity.
+  // The group number is public and self-reported, not proof of identity.
   const body = [
     "<!-- cds670-student-report -->",
-    "**Group Number:** " + data.Groupnumber.trim(),
+    "**Group number:** " + data.groupNumber.trim(),
     "**Area:** " + data.category,
     "",
     "### Description",

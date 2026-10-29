@@ -5,7 +5,7 @@ const API = "https://api.github.com/repos/" + REPO;
 const STAFF = new Set(["manohargolleru"]);
 const config = window.CDS670_CONFIG || {};
 const form = document.getElementById("report-form");
-const nameInput = document.getElementById("display-name");
+const groupInput = document.getElementById("group-number");
 const feedback = document.getElementById("form-feedback");
 const submitButton = document.getElementById("submit-button");
 const list = document.getElementById("issue-list");
@@ -62,9 +62,9 @@ const statusNames = {
 
 function reportDetails(issue) {
   const raw = issue.body || "";
-  const prefix = "<!-- cds670-student-report -->\n**Display name:** ";
+  const prefix = "<!-- cds670-student-report -->\n**Group number:** ";
   if (raw.startsWith(prefix)) {
-    const match = /^<!-- cds670-student-report -->\n\*\*Display name:\*\* ([^\n]+)\n\*\*Area:\*\* ([^\n]+)\n\n### Description\n([\s\S]*)$/.exec(raw);
+    const match = /^<!-- cds670-student-report -->\n\*\*Group number:\*\* ([^\n]+)\n\*\*Area:\*\* ([^\n]+)\n\n### Description\n([\s\S]*)$/.exec(raw);
     if (match) {
       let description = match[3];
       let attachments = [];
@@ -78,10 +78,10 @@ function reportDetails(issue) {
           description = description.slice(0, start);
         }
       }
-      return { name: match[1], category: match[2], description, attachments };
+      return { groupNumber: match[1], category: match[2], description, attachments };
     }
   }
-  return { name: issue.user?.login || "GitHub user", category: "", description: raw, attachments: [] };
+  return { groupNumber: "Not provided", category: "", description: raw, attachments: [] };
 }
 
 function githubLink(url, title) {
@@ -142,7 +142,7 @@ function makeIssue(issue) {
   firstRow.append(element("span", "issue-number", "#" + issue.number));
   firstRow.append(element("span", "status status-" + status, statusNames[status]));
   summary.append(firstRow, element("div", "issue-title", issue.title || "Untitled report"));
-  summary.append(element("div", "issue-meta", "By " + detail.name + " · Updated " + formatDate(issue.updated_at)));
+  summary.append(element("div", "issue-meta", "Group number: " + detail.groupNumber + " · Updated " + formatDate(issue.updated_at)));
   const body = element("div", "issue-body");
   if (detail.category) {
     const group = element("div");
@@ -181,7 +181,7 @@ function renderIssues() {
   const visible = issues.filter((issue) => {
     if (filter !== "all" && statusFor(issue) !== filter) return false;
     const detail = reportDetails(issue);
-    return (issue.title + " " + detail.name + " " + detail.description + " " + detail.category)
+    return (issue.title + " " + detail.groupNumber + " " + detail.description + " " + detail.category)
       .toLocaleLowerCase().includes(term);
   });
   list.replaceChildren();
@@ -307,9 +307,9 @@ form.addEventListener("submit", async (event) => {
     return;
   }
   const endpoint = config.submitEndpoint;
-  const previousName = nameInput.value.trim();
+  const previousGroupNumber = groupInput.value.trim();
   const payload = new FormData();
-  payload.set("displayName", previousName);
+  payload.set("groupNumber", previousGroupNumber);
   payload.set("title", document.getElementById("issue-title").value.trim());
   payload.set("category", document.getElementById("category").value);
   payload.set("description", document.getElementById("description").value.trim());
@@ -331,11 +331,11 @@ form.addEventListener("submit", async (event) => {
     try { result = await response.json(); } catch { result = {}; }
     if (!response.ok) throw new Error(result.error || "We couldn't post your report. Please try again.");
     showFeedback("Report #" + result.number + " submitted successfully.", false, result.url);
-    try { localStorage.setItem("cds670-name", previousName); } catch {}
+    try { localStorage.setItem("cds670-group-number", previousGroupNumber); } catch {}
     form.reset();
     selectedFiles = [];
     renderSelectedFiles();
-    nameInput.value = previousName;
+    groupInput.value = previousGroupNumber;
     expandedIssue = result.number;
     await loadIssues();
   } catch (error) {
@@ -364,6 +364,6 @@ for (const button of document.querySelectorAll(".filter")) {
 
 search.addEventListener("input", renderIssues);
 refresh.addEventListener("click", loadIssues);
-try { nameInput.value = localStorage.getItem("cds670-name") || ""; } catch {}
+try { groupInput.value = localStorage.getItem("cds670-group-number") || ""; } catch {}
 setupSubmission();
 loadIssues();

@@ -4,7 +4,7 @@ import { handleRequest } from "../src/index.mjs";
 
 const origin = "https://manohargolleru.github.io";
 const payload = {
-  displayName: "CDS670-Test", title: "Offline test report", category: "Testing",
+  groupNumber: "2", title: "Offline test report", category: "Testing",
   description: "Steps to reproduce this offline test report.", website: "",
   turnstileToken: "dummy-local-token"
 };
@@ -52,7 +52,7 @@ test("valid report creates exactly one issue after verification and rate limitin
   assert.deepEqual(f.calls[1].input, { key: "192.0.2.1" });
   const issue = JSON.parse(f.calls[2].options.body);
   assert.deepEqual(issue.labels, ["student-report", "status: new"]);
-  assert.match(issue.body, /\*\*Display name:\*\* CDS670-Test/);
+  assert.match(issue.body, /\*\*Group number:\*\* 2/);
   assert.match(issue.body, /@\u200bsomeone/);
   assert.match(issue.title, /@\u200bsomeone/);
   assert.equal(f.calls[2].options.headers.Authorization, "Bearer dummy-github-secret");
@@ -79,7 +79,7 @@ for (const badOrigin of ["https://evil.example", "null", ""]) {
 }
 
 for (const [field, value] of [
-  ["displayName", ""], ["displayName", "  "], ["displayName", "x"], ["displayName", "Bad@name"],
+  ["groupNumber", ""], ["groupNumber", "  "], ["groupNumber", "Bad@name"],
   ["title", "short"], ["title", "        "], ["title", "bad\nline title"], ["title", "x".repeat(101)],
   ["description", " " .repeat(20)], ["description", "short"], ["description", "x".repeat(3001)],
   ["category", "Unknown"], ["website", "spam"], ["turnstileToken", ""],
