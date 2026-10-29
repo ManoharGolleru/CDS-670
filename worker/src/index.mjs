@@ -20,9 +20,9 @@ function send(data, status, origin) {
 
 function validSubmission(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) return false;
-  const { displayName, title, category, description, website, turnstileToken } = data;
+  const { Groupnumber, title, category, description, website, turnstileToken } = data;
   if (typeof website !== "string" || website !== "") return false;
-  if (typeof displayName !== "string" || !/^[\p{L}\p{N} _.-]{2,32}$/u.test(displayName) || displayName.trim().length < 2) return false;
+  if (typeof Groupnumber !== "string" || !/^[\p{L}\p{N} _.-]{2,32}$/u.test(Groupnumber) || Groupnumber.trim().length < 2) return false;
   if (typeof title !== "string" || title.trim().length < 8 || title.length > 100 || /[\r\n]/.test(title)) return false;
   if (typeof description !== "string" || description.trim().length < 20 || description.length > 3000) return false;
   if (typeof category !== "string" || !CATEGORIES.has(category)) return false;
@@ -100,10 +100,10 @@ export async function handleRequest(request, env, fetcher = fetch) {
   }
 
   // A GitHub issue is written by the token owner. The student's name is a public,
-  // self-chosen display name, not proof of identity.
+  // self-chosen Group number, not proof of identity.
   const body = [
     "<!-- cds670-student-report -->",
-    "**Display name:** " + data.displayName.trim(),
+    "**Group Number:** " + data.Groupnumber.trim(),
     "**Area:** " + data.category,
     "",
     "### Description",
